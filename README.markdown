@@ -7,9 +7,10 @@ Follows memcached protocol. Uses Sockets from Java library.
 # Basic example: 
   
     (use 'clojure.memcached)
-    (setup-memcached ["localhost:11211"])
+    (setup-memcached ["localhost:11211", "localhost:11212])
     (set-val "key" "value")
     (get-val "key")
+    (close-memcached)
 
 # Additional notes:
 

@@ -27,9 +27,8 @@
 
 (defn which-server? 
   "Takes the md5 of the key, breaks it into a 10 character string,
-   turns it into long value, then returns that value mod n. 
-   The purpose is randomly distribute among the server pool based 
-   on the keys."
+   turns it into long value, then returns the long value mod n. 
+   The purpose is to randomly distribute data among the server pool"
   [key n]
   (int (mod (. Long (valueOf (break (md5 key) 10) 16)) n)))
 
@@ -49,10 +48,10 @@
 (defn setup-memcached 
   "Initializes memcached. vec is a vector with host:port values."
   [vec]
-  (def sockets (ref (setup-sockets vec))))
+  (setup-sockets vec))
 
-(defn- close-sockets []
-  (loop [s @sockets]
+(defn- close-sockets [sockets]
+  (loop [s sockets]
     (if (= nil (first s))
       true
       (let [socket (first s)]
@@ -61,12 +60,12 @@
 
 (defn close-memcached 
   "Run this to close any sockets that are open."
-  []
-  (close-sockets))
+  [sockets]
+  (close-sockets sockets))
 
-(defn- init [key f]
+(defn- init [sockets key f]
   (try
-   (let [client (@sockets (which-server? key (count @sockets)))
+   (let [client (sockets (which-server? key (count sockets)))
 	 os (new DataOutputStream (. client getOutputStream))
 	 is (new DataInputStream (. client getInputStream))]
      (f os is))
@@ -76,9 +75,9 @@
 (defn set-val 
   "Sets a value in memcached. If a value already exists with that key, it
    will be replaced."
-  [key val]
+  [sockets key val]
   (init 
-   key
+   sockets key
    (fn [os is]
      (. os (writeBytes (str "set " key " 0 0 " (count val) "\r\n" val "\r\n")))
      (loop []
@@ -89,9 +88,9 @@
 
 (defn get-val 
   "Gets the key's value in memcached."
-  [key]
+  [sockets key]
   (init 
-   key
+   sockets key
    (fn [os is]
      (. os (writeBytes (str "get " key " \r\n")))
      (let [r (loop [full-response '()]
