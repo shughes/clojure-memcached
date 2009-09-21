@@ -6,10 +6,10 @@ Follows memcached protocol. Uses Sockets from Java library.
 
 # Basic example: 
   
-  (use 'clojure.memcached)
-  (setup-memcached ["localhost:11211"])
-  (set-val "key" "value")
-  (get-val "key")
+    (use 'clojure.memcached)
+    (setup-memcached ["localhost:11211"])
+    (set-val "key" "value")
+    (get-val "key")
 
 # Additional notes:
 
