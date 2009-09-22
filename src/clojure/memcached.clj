@@ -29,10 +29,12 @@
   "Takes the md5 of the key, breaks it into a 10 character string,
    turns it into long value, then returns the long value mod n. 
    The purpose is to randomly distribute data among the server pool"
-  [key n]
-  (int (mod (. Long (valueOf (break (md5 key) 10) 16)) n)))
+  [sockets key]
+  (int (mod (. Long (valueOf (break (md5 key) 10) 16)) (count sockets))))
 
-(defn- setup-sockets [a]
+(defn setup-sockets 
+  "Initializes memcached. vec is a vector with host:port values."
+  [a]
   (loop [arr a, result []]
     (if (= nil (first arr)) 
       result
@@ -45,12 +47,9 @@
 	    client (new Socket host (new Integer port))]
 	(recur (rest arr) (conj result client))))))
 
-(defn setup-memcached 
-  "Initializes memcached. vec is a vector with host:port values."
-  [vec]
-  (setup-sockets vec))
-
-(defn- close-sockets [sockets]
+(defn close-sockets 
+  "Run this to close any sockets that are open."
+  [sockets]
   (loop [s sockets]
     (if (= nil (first s))
       true
@@ -58,14 +57,9 @@
 	(. socket close)
 	(recur (rest s))))))
 
-(defn close-memcached 
-  "Run this to close any sockets that are open."
-  [sockets]
-  (close-sockets sockets))
-
 (defn- init [sockets key f]
   (try
-   (let [client (sockets (which-server? key (count sockets)))
+   (let [client (sockets (which-server? sockets key))
 	 os (new DataOutputStream (. client getOutputStream))
 	 is (new DataInputStream (. client getInputStream))]
      (f os is))
