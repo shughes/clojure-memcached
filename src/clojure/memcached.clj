@@ -63,8 +63,9 @@
 	 os (new DataOutputStream (. client getOutputStream))
 	 is (new DataInputStream (. client getInputStream))]
      (f os is))
-   (catch UnknownHostException e e)
-   (catch IOException e e)))
+   (catch UnknownHostException e (println e))
+   (catch IOException e (println e))))
+
 
 (defn set-val 
   "Sets a value in memcached. If a value already exists with that key, it
@@ -80,6 +81,13 @@
 	       (not= (. response trim) "STORED") (recur)
 	       :else true))))))
 
+(defn delete-val [sockets key]
+  (init sockets key
+	(fn [os is]
+	  (. os (writeBytes (str "delete " key "\r\n")))
+	  (let [response (. (. is readLine) trim)]
+	    response))))
+
 (defn get-val 
   "Gets the key's value in memcached."
   [sockets key]
@@ -92,4 +100,9 @@
 		 (cond (= nil response) ""
 		       (= "END" (. response trim)) (conj full-response response)
 		       (not= "END" (. response trim)) (recur (conj full-response response)))))]
-       (first (rest r))))))
+       (if (= (count r) 1)
+	 nil
+	 (first (rest r)))))))
+
+
+
